@@ -22,6 +22,40 @@
         color: var(--text);
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       }
+      .auth-view {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      .auth-card {
+        width: min(420px, 100%);
+      }
+      .app-shell {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+      }
+      .sidebar {
+        border-right: 1px solid var(--line);
+        background: #13161c;
+        padding: 14px;
+      }
+      .sidebar h3 {
+        margin-bottom: 10px;
+      }
+      .sidebar .menu button {
+        text-align: left;
+        width: 100%;
+        margin-top: 8px;
+      }
+      .sidebar .menu button.active {
+        border-color: #f76707;
+        background: #2a2f37;
+      }
+      .content {
+        min-width: 0;
+      }
       .layout {
         max-width: 1240px;
         margin: 20px auto;
@@ -231,6 +265,59 @@
         width: auto;
         margin: 0;
         padding: 8px 10px;
+      }
+      .modpack-card {
+        display: grid;
+        grid-template-columns: 56px 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .modpack-cover {
+        width: 56px;
+        height: 56px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        background: #0e1014;
+      }
+      .modpack-tags {
+        margin-top: 6px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .modpack-tags button {
+        width: auto;
+        margin: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+        border-radius: 999px;
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(140px, 1fr));
+        gap: 10px;
+      }
+      .summary-card {
+        border: 1px solid var(--line);
+        background: #111318;
+        border-radius: 12px;
+        padding: 10px;
+      }
+      .home-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .home-module {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #111318;
+        padding: 12px;
+      }
+      .home-module button {
+        margin-top: 10px;
+        width: auto;
       }
       .muted {
         color: var(--muted);
@@ -498,6 +585,17 @@
         margin: 0;
       }
       @media (max-width: 900px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .summary-grid,
+        .home-grid {
+          grid-template-columns: 1fr;
+        }
         .dashboard-grid,
         .detail-grid {
           grid-template-columns: 1fr;
@@ -513,26 +611,109 @@
     </style>
   </head>
   <body>
+    <section id="viewAuth" class="auth-view hidden">
+      <div class="card auth-card">
+        <h2>Server Utils Suite</h2>
+        <p class="muted">Inicia sesion para gestionar tus modpacks.</p>
+        <label>Email</label>
+        <input id="authEmail" type="email" placeholder="demo@local.dev" />
+        <label>Password</label>
+        <input id="authPassword" type="password" placeholder="********" />
+        <div class="row" style="margin-top:10px">
+          <button id="btnAuthLogin">Entrar</button>
+          <button class="secondary" id="btnAuthRegister">Registrar</button>
+        </div>
+        <div class="muted" id="authStatus" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <div id="appRoot" class="app-shell hidden">
+      <aside class="sidebar">
+        <h3>Server Utils</h3>
+        <div class="muted" id="sidebarUser">Sin sesion</div>
+        <div class="menu">
+          <button class="secondary" id="navHome">Homepage</button>
+          <button class="secondary" id="navDashboard">Dashboard</button>
+          <button class="secondary" id="navModpackEditor">Modpack Editor</button>
+          <button class="secondary" id="navSettings">Configuracion</button>
+          <button class="secondary" id="navAccount">Cuenta</button>
+          <button class="ghost" id="btnLogout">Cerrar sesion</button>
+        </div>
+      </aside>
+
+      <div class="content">
     <div class="layout">
       <div class="topbar">
-        <div class="brand">CraftForge Local Server | Dashboard</div>
+        <div class="brand">Server Utils Suite</div>
         <div class="top-actions">
           <button class="secondary" id="btnDashboard">Dashboard</button>
-          <button id="btnCrear">Crear Modpack</button>
+          <button id="btnCrear">Nuevo Modpack</button>
         </div>
       </div>
 
-      <section class="view" id="viewDashboard">
+      <section class="view" id="viewHome">
+        <div class="dashboard-grid">
+          <section class="card">
+            <h2>Homepage</h2>
+            <p class="muted">Centro de utilidades para servidores. Selecciona un modulo para comenzar.</p>
+            <div class="home-grid">
+              <div class="home-module">
+                <h3>Modpack Editor</h3>
+                <p class="muted">Crear y gestionar modpacks, importar/exportar y mantener compatibilidad.</p>
+                <button class="secondary" id="homeGoEditor">Abrir Modpack Editor</button>
+              </div>
+              <div class="home-module">
+                <h3>Dashboard</h3>
+                <p class="muted">Vista global de paquetes y actividad reciente.</p>
+                <button class="secondary" id="homeGoDashboard">Ir al Dashboard</button>
+              </div>
+              <div class="home-module">
+                <h3>Configuracion</h3>
+                <p class="muted">Opciones generales de la suite y preferencias de trabajo.</p>
+                <button class="secondary" id="homeGoSettings">Abrir Configuracion</button>
+              </div>
+              <div class="home-module">
+                <h3>Cuenta</h3>
+                <p class="muted">Informacion de sesion, usuario activo y acciones de seguridad.</p>
+                <button class="secondary" id="homeGoAccount">Abrir Cuenta</button>
+              </div>
+            </div>
+          </section>
+          <section class="card">
+            <h2>Estado del Sistema</h2>
+            <div id="dashboardSummary" class="summary-grid"></div>
+            <h3 style="margin-top:12px">Actividad</h3>
+            <pre id="log" class="muted"></pre>
+          </section>
+        </div>
+      </section>
+
+      <section class="view hidden" id="viewDashboard">
         <div class="dashboard-grid">
           <section class="card">
             <h2>Mis Modpacks</h2>
             <div id="modpacksList"></div>
           </section>
           <section class="card">
-            <h2>Actividad</h2>
-            <pre id="log" class="muted"></pre>
+            <h2>Resumen</h2>
+            <div id="dashboardSummarySecondary" class="summary-grid"></div>
+            <p class="muted" style="margin-top:10px">Usa el Modpack Editor para gestionar mods en detalle.</p>
           </section>
         </div>
+      </section>
+
+      <section class="view hidden" id="viewSettings">
+        <section class="card">
+          <h2>Configuracion</h2>
+          <p class="muted">Este modulo se ira ampliando con preferencias de la suite (tema, notificaciones y defaults de export).</p>
+        </section>
+      </section>
+
+      <section class="view hidden" id="viewAccount">
+        <section class="card">
+          <h2>Cuenta</h2>
+          <div class="muted" id="accountInfo">Sin datos de cuenta.</div>
+        </section>
       </section>
 
       <section class="view hidden" id="viewCreate">
@@ -625,6 +806,8 @@
         </div>
       </section>
     </div>
+      </div>
+    </div>
 
     <div class="modal hidden" id="modDetailsModal">
       <div class="modal-card">
@@ -639,6 +822,8 @@
     <script>
       const API = "/api/v1";
       const state = {
+        authToken: localStorage.getItem("cf_token") || "",
+        currentUser: null,
         selectedModpackId: null,
         versions: [],
         currentModloaders: [],
@@ -661,13 +846,54 @@
       }
 
       function showView(name) {
+        const navMap = {
+          home: "navHome",
+          dashboard: "navDashboard",
+          create: "navModpackEditor",
+          detail: "navModpackEditor",
+          settings: "navSettings",
+          account: "navAccount",
+        };
+
         document.getElementById("viewDashboard").classList.toggle("hidden", name !== "dashboard");
+        document.getElementById("viewHome").classList.toggle("hidden", name !== "home");
         document.getElementById("viewCreate").classList.toggle("hidden", name !== "create");
         document.getElementById("viewDetail").classList.toggle("hidden", name !== "detail");
+        document.getElementById("viewSettings").classList.toggle("hidden", name !== "settings");
+        document.getElementById("viewAccount").classList.toggle("hidden", name !== "account");
+
+        ["navHome", "navDashboard", "navModpackEditor", "navSettings", "navAccount"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.classList.toggle("active", navMap[name] === id);
+        });
+      }
+
+      function showAuth(visible) {
+        document.getElementById("viewAuth").classList.toggle("hidden", !visible);
+        document.getElementById("appRoot").classList.toggle("hidden", visible);
+      }
+
+      function setSession(token, user) {
+        state.authToken = token || "";
+        state.currentUser = user || null;
+        if (state.authToken) {
+          localStorage.setItem("cf_token", state.authToken);
+        } else {
+          localStorage.removeItem("cf_token");
+        }
+        document.getElementById("sidebarUser").textContent = user?.email ? `Sesion: ${user.email}` : "Sin sesion";
+        document.getElementById("accountInfo").textContent = user?.email
+          ? `Usuario: ${user.email}${user?.nombre ? ` | Nombre: ${user.nombre}` : ""}`
+          : "Sin datos de cuenta.";
       }
 
       async function apiFetch(url, options = {}) {
-        const res = await fetch(url, options);
+        const headers = new Headers(options.headers || {});
+        if (state.authToken && !headers.has("Authorization")) {
+          headers.set("Authorization", `Bearer ${state.authToken}`);
+        }
+        const res = await fetch(url, { ...options, headers });
         const text = await res.text();
         const payload = text ? JSON.parse(text) : null;
         if (!res.ok) {
@@ -675,6 +901,67 @@
           throw new Error(msg);
         }
         return payload;
+      }
+
+      async function authLogin() {
+        const email = document.getElementById("authEmail").value.trim().toLowerCase();
+        const password = document.getElementById("authPassword").value;
+        const status = document.getElementById("authStatus");
+        status.textContent = "Iniciando sesion...";
+
+        const res = await apiFetch(`${API}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        setSession(res.data.token, res.data.user);
+        status.textContent = "";
+        showAuth(false);
+        await Promise.all([loadDashboard(), loadCreateCatalog()]);
+        showView("dashboard");
+      }
+
+      async function authRegister() {
+        const email = document.getElementById("authEmail").value.trim().toLowerCase();
+        const password = document.getElementById("authPassword").value;
+        const status = document.getElementById("authStatus");
+        status.textContent = "Creando cuenta...";
+
+        const res = await apiFetch(`${API}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        setSession(res.data.token, res.data.user);
+        status.textContent = "";
+        showAuth(false);
+        await Promise.all([loadDashboard(), loadCreateCatalog()]);
+        showView("dashboard");
+      }
+
+      async function authRestoreSession() {
+        if (!state.authToken) {
+          showAuth(true);
+          return false;
+        }
+
+        try {
+          const me = await apiFetch(`${API}/auth/me`);
+          setSession(state.authToken, me.data);
+          showAuth(false);
+          return true;
+        } catch {
+          setSession("", null);
+          showAuth(true);
+          return false;
+        }
+      }
+
+      function logout() {
+        setSession("", null);
+        showAuth(true);
       }
 
       function escapeHtml(value) {
@@ -949,6 +1236,8 @@
         const root = document.getElementById("modpacksList");
         root.innerHTML = "";
 
+        renderDashboardSummary(response.data || []);
+
         if (!response.data.length) {
           root.innerHTML = "<p class='muted'>Aun no hay modpacks creados.</p>";
           return;
@@ -958,13 +1247,21 @@
           const div = document.createElement("div");
           div.className = "modpack-item";
           div.innerHTML = `
-            <div>
-              <strong>${m.nombre}</strong>
-              <div class='muted'>${m.versionMinecraft} | ${m.modloaderTipo} ${m.modloaderVersion}</div>
-            </div>
-            <div class='actions'>
-              <button class='secondary' data-open='${m.id}'>Abrir</button>
-              <button class='ghost' data-del='${m.id}'>Eliminar</button>
+            <div class='modpack-card'>
+              <img class='modpack-cover' src='${m.coverUrl || ""}' alt='${escapeHtml(m.nombre)}' onerror='this.style.visibility="hidden"' />
+              <div>
+                <strong>${escapeHtml(m.nombre)}</strong>
+                <div class='muted'>${escapeHtml(m.versionMinecraft)} | ${escapeHtml(m.modloaderTipo)} ${escapeHtml(m.modloaderVersion)} | mods ${Number(m.modsCount || 0)}</div>
+                <div class='modpack-tags'>
+                  <button class='ghost' data-open='${m.id}'>Abrir</button>
+                  <button class='ghost' data-open='${m.id}'>Editor</button>
+                </div>
+              </div>
+              <div class='actions'>
+                <button class='secondary' data-export='${m.id}'>Exportar</button>
+                <button class='secondary' data-clone='${m.id}'>Clonar Servidor</button>
+                <button class='ghost' data-del='${m.id}'>Eliminar</button>
+              </div>
             </div>
           `;
           root.appendChild(div);
@@ -986,6 +1283,57 @@
             log(`Modpack eliminado ID=${id}`);
             await loadDashboard();
           });
+        });
+
+        root.querySelectorAll("button[data-clone]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = Number(btn.getAttribute("data-clone"));
+            if (!confirm(`Clonar perfil CLIENT -> SERVER para modpack ${id}?`)) return;
+            await apiFetch(`${API}/modpacks/${id}/profiles/server/clone-from-client`, { method: "POST" });
+            log(`Clonado perfil servidor para modpack ${id}`);
+          });
+        });
+
+        root.querySelectorAll("button[data-export]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = Number(btn.getAttribute("data-export"));
+            const target = prompt("Target de export: CLIENT|SERVER|BOTH", "BOTH") || "BOTH";
+            const format = prompt("Formato: MODS_ZIP|CURSEFORGE_ZIP", "MODS_ZIP") || "MODS_ZIP";
+            await enqueueExportByModpack(id, target.toUpperCase(), format.toUpperCase());
+          });
+        });
+      }
+
+      function renderDashboardSummary(modpacks) {
+        const roots = [document.getElementById("dashboardSummary"), document.getElementById("dashboardSummarySecondary")];
+
+        const totalPacks = Number(modpacks?.length || 0);
+        const totalMods = modpacks.reduce((acc, m) => acc + Number(m.modsCount || 0), 0);
+        const avgMods = totalPacks ? Math.round(totalMods / totalPacks) : 0;
+        const loaders = new Set(modpacks.map((m) => m.modloaderTipo));
+
+        const metrics = [
+          { label: "Modpacks", value: totalPacks, desc: "Paquetes activos" },
+          { label: "Mods Totales", value: totalMods, desc: "Suma de mods" },
+          { label: "Promedio/Pack", value: avgMods, desc: "Densidad media" },
+          { label: "Loaders", value: loaders.size, desc: "Tipos en uso" },
+        ];
+
+        const html = metrics
+          .map((m) => {
+            return `
+              <div class='summary-card'>
+                <div><strong>${m.value}</strong></div>
+                <div class='muted'>${m.label}</div>
+                <div class='muted' style='margin-top:4px'>${m.desc}</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        roots.forEach((root) => {
+          if (!root) return;
+          root.innerHTML = html;
         });
       }
 
@@ -1445,6 +1793,15 @@
         await watchExport(result.data.id);
       }
 
+      async function enqueueExportByModpack(modpackId, target, format) {
+        const result = await apiFetch(`${API}/modpacks/${modpackId}/exports`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target, format }),
+        });
+        log(`Export dashboard modpack=${modpackId} job=${result.data.id}`);
+      }
+
       async function watchExport(jobId) {
         const statusEl = document.getElementById("exportStatus");
         const downloadEl = document.getElementById("exportDownload");
@@ -1530,9 +1887,40 @@
         showView("dashboard");
       });
 
+      document.getElementById("navDashboard").addEventListener("click", async () => {
+        await loadDashboard();
+        showView("dashboard");
+      });
+
+      document.getElementById("navHome").addEventListener("click", async () => {
+        await loadDashboard();
+        showView("home");
+      });
+
+      document.getElementById("navModpackEditor").addEventListener("click", () => {
+        showView("create");
+      });
+
+      document.getElementById("navSettings").addEventListener("click", () => {
+        showView("settings");
+      });
+
+      document.getElementById("navAccount").addEventListener("click", () => {
+        showView("account");
+      });
+
+      document.getElementById("btnLogout").addEventListener("click", () => {
+        logout();
+      });
+
       document.getElementById("btnCrear").addEventListener("click", () => {
         showView("create");
       });
+
+      document.getElementById("homeGoEditor").addEventListener("click", () => showView("create"));
+      document.getElementById("homeGoDashboard").addEventListener("click", () => showView("dashboard"));
+      document.getElementById("homeGoSettings").addEventListener("click", () => showView("settings"));
+      document.getElementById("homeGoAccount").addEventListener("click", () => showView("account"));
 
       document.getElementById("versionMinecraft").addEventListener("change", async () => {
         await refillLoaderFamilies();
@@ -1595,10 +1983,33 @@
         closeModDetails();
       });
 
+      document.getElementById("btnAuthLogin").addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          await authLogin();
+        } catch (error) {
+          document.getElementById("authStatus").textContent = `Login fallido: ${error.message}`;
+        }
+      });
+
+      document.getElementById("btnAuthRegister").addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          await authRegister();
+        } catch (error) {
+          document.getElementById("authStatus").textContent = `Registro fallido: ${error.message}`;
+        }
+      });
+
       async function init() {
         try {
+          const restored = await authRestoreSession();
+          if (!restored) {
+            log("Esperando login");
+            return;
+          }
           await Promise.all([loadDashboard(), loadCreateCatalog()]);
-          showView("dashboard");
+          showView("home");
           log("Aplicacion lista");
         } catch (error) {
           log(`Error inicializando app: ${error.message}`);

@@ -42,6 +42,7 @@ ON CONFLICT (key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS modpacks (
   id BIGSERIAL PRIMARY KEY,
+  owner_user_id BIGINT NULL,
   nombre VARCHAR(150) NOT NULL,
   version_minecraft VARCHAR(20) NOT NULL,
   modloader_tipo modloader_tipo NOT NULL,
@@ -49,6 +50,45 @@ CREATE TABLE IF NOT EXISTS modpacks (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS app_users (
+  id BIGSERIAL PRIMARY KEY,
+  email VARCHAR(200) NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  nombre VARCHAR(120) NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE modpacks
+  ADD COLUMN IF NOT EXISTS owner_user_id BIGINT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM app_users WHERE email = 'demo@local.dev'
+  ) THEN
+    INSERT INTO app_users (email, password_hash, nombre)
+    VALUES ('demo@local.dev', '$2a$10$2vMfE8sA7n3QJ0qK2.DVfOVN6hY8x3hR9vQWQ2hPi0uG8koT0IZ5K', 'Demo User');
+  END IF;
+END $$;
+
+UPDATE modpacks
+SET owner_user_id = (SELECT id FROM app_users WHERE email = 'demo@local.dev' LIMIT 1)
+WHERE owner_user_id IS NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_name = 'modpacks'
+      AND constraint_name = 'fk_modpacks_owner_user'
+  ) THEN
+    ALTER TABLE modpacks
+      ADD CONSTRAINT fk_modpacks_owner_user
+      FOREIGN KEY (owner_user_id) REFERENCES app_users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS modpack_mods (
   id BIGSERIAL PRIMARY KEY,
@@ -109,6 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_modpack_mods_profile
 CREATE TABLE IF NOT EXISTS export_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   modpack_id BIGINT NOT NULL REFERENCES modpacks(id) ON DELETE CASCADE,
+  owner_user_id BIGINT NULL REFERENCES app_users(id) ON DELETE CASCADE,
   target export_target NOT NULL,
   format export_format NOT NULL DEFAULT 'MODS_ZIP',
   status export_status NOT NULL DEFAULT 'queued',
@@ -128,6 +169,21 @@ CREATE INDEX IF NOT EXISTS idx_export_jobs_status
 
 ALTER TABLE export_jobs
   ADD COLUMN IF NOT EXISTS format export_format NOT NULL DEFAULT 'MODS_ZIP';
+
+ALTER TABLE export_jobs
+  ADD COLUMN IF NOT EXISTS owner_user_id BIGINT NULL REFERENCES app_users(id) ON DELETE CASCADE;
+
+UPDATE export_jobs ej
+SET owner_user_id = m.owner_user_id
+FROM modpacks m
+WHERE ej.modpack_id = m.id
+  AND ej.owner_user_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_modpacks_owner
+  ON modpacks(owner_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_export_jobs_owner
+  ON export_jobs(owner_user_id);
 
 -- Cola transaccional simple para desacoplar API y worker.
 CREATE TABLE IF NOT EXISTS outbox_export_jobs (

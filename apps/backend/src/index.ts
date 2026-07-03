@@ -8,6 +8,8 @@ import { db } from "./lib/db.js";
 import { modpacksRouter, modsSearchRouter } from "./routes/modpacks.js";
 import { systemRouter } from "./routes/system.js";
 import { exportsRouter } from "./routes/exports.js";
+import { authRouter } from "./routes/auth.js";
+import { requireAuth } from "./middleware/auth.js";
 
 const logger = pino({ level: "info" });
 const app = express();
@@ -29,10 +31,11 @@ app.get("/healthz", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/system", systemRouter);
-app.use("/api/v1/modpacks", modpacksRouter);
-app.use("/api/v1/mods", modsSearchRouter);
-app.use("/api/v1", exportsRouter);
+app.use("/api/v1/modpacks", requireAuth, modpacksRouter);
+app.use("/api/v1/mods", requireAuth, modsSearchRouter);
+app.use("/api/v1", requireAuth, exportsRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof ZodError) {

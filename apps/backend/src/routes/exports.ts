@@ -41,10 +41,11 @@ function normalizeNameForImport(name: string): string {
 
 exportsRouter.post("/modpacks/:modpackId/exports", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const payload = createExportSchema.parse(req.body);
 
-    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1", [modpackId]);
+    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1 AND owner_user_id = $2", [modpackId, userId]);
     if (!modpackRes.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
       return;
@@ -52,12 +53,12 @@ exportsRouter.post("/modpacks/:modpackId/exports", async (req, res, next) => {
 
     const jobRes = await db.query(
       `
-      INSERT INTO export_jobs (modpack_id, target, format, status)
-      VALUES ($1, $2, $3, 'queued')
-      RETURNING id, modpack_id AS "modpackId", target, format, status, output_file AS "outputPath",
+      INSERT INTO export_jobs (modpack_id, owner_user_id, target, format, status)
+      VALUES ($1, $2, $3, $4, 'queued')
+      RETURNING id, modpack_id AS "modpackId", owner_user_id AS "ownerUserId", target, format, status, output_file AS "outputPath",
                 error_message AS "errorMessage", created_at AS "createdAt", started_at AS "startedAt", finished_at AS "finishedAt"
       `,
-      [modpackId, payload.target, payload.format],
+      [modpackId, userId, payload.target, payload.format],
     );
 
     const job = jobRes.rows[0];
@@ -83,6 +84,7 @@ exportsRouter.post("/modpacks/:modpackId/exports", async (req, res, next) => {
 
 exportsRouter.get("/exports/:jobId", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const jobId = req.params.jobId;
     const result = await db.query(
       `
@@ -91,9 +93,9 @@ exportsRouter.get("/exports/:jobId", async (req, res, next) => {
              output_file AS "outputPath", error_message AS "errorMessage",
              created_at AS "createdAt", started_at AS "startedAt", finished_at AS "finishedAt"
       FROM export_jobs
-      WHERE id = $1
+      WHERE id = $1 AND owner_user_id = $2
       `,
-      [jobId],
+      [jobId, userId],
     );
 
     if (!result.rowCount) {
@@ -109,14 +111,15 @@ exportsRouter.get("/exports/:jobId", async (req, res, next) => {
 
 exportsRouter.get("/exports/:jobId/download", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const jobId = req.params.jobId;
     const result = await db.query(
       `
       SELECT output_file, status
       FROM export_jobs
-      WHERE id = $1
+      WHERE id = $1 AND owner_user_id = $2
       `,
-      [jobId],
+      [jobId, userId],
     );
 
     if (!result.rowCount) {
@@ -138,13 +141,14 @@ exportsRouter.get("/exports/:jobId/download", async (req, res, next) => {
 
 exportsRouter.post("/modpacks/:modpackId/imports/curseforge", upload.single("file"), async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const input = importCurseforgeSchema.parse({
       profile: req.body?.profile,
       entornoDestino: req.body?.entornoDestino,
     });
 
-    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1", [modpackId]);
+    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1 AND owner_user_id = $2", [modpackId, userId]);
     if (!modpackRes.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
       return;

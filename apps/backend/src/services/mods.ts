@@ -159,6 +159,7 @@ async function resolveDependencies(
 }
 
 export async function addModWithDependencies(params: {
+  userId: number;
   modpackId: number;
   profile: ModpackProfile;
   curseforgeProjectId: number;
@@ -166,8 +167,8 @@ export async function addModWithDependencies(params: {
   entornoDestino: "BOTH" | "CLIENT_ONLY" | "SERVER_ONLY";
 }): Promise<AddResult> {
   const modpackRes = await db.query(
-    "SELECT id, version_minecraft, modloader_tipo FROM modpacks WHERE id = $1",
-    [params.modpackId],
+    "SELECT id, version_minecraft, modloader_tipo FROM modpacks WHERE id = $1 AND owner_user_id = $2",
+    [params.modpackId, params.userId],
   );
 
   if (!modpackRes.rowCount) {

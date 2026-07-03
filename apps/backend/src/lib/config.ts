@@ -45,4 +45,6 @@ export const config = {
   depResolveMaxDepth: Number(process.env.DEP_RESOLVE_MAX_DEPTH ?? 20),
   workerMaxParallelDownloads: Number(process.env.WORKER_MAX_PARALLEL_DOWNLOADS ?? 3),
   scratchBaseDir: process.env.SCRATCH_BASE_DIR ?? path.resolve(process.cwd(), "scratch"),
+  jwtSecret: process.env.JWT_SECRET ?? "change_me_in_production",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "12h",
 };

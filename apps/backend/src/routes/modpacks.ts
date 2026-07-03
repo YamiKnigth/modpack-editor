@@ -106,6 +106,16 @@ async function fetchCompatibleFiles(
   return Array.isArray(filesRes?.data) ? filesRes.data : [];
 }
 
+function latestCompatibleForCurrentRelease(files: any[], currentReleaseType: number): any | null {
+  if (!Array.isArray(files) || !files.length) return null;
+  const effectiveReleaseType = Number.isFinite(currentReleaseType) ? currentReleaseType : 3;
+  const eligible = files.filter((f: any) => {
+    const rt = Number(f?.releaseType ?? 3);
+    return rt <= effectiveReleaseType;
+  });
+  return (eligible.length ? eligible : files)[0] ?? null;
+}
+
 const updateModVersionSchema = z.object({
   profile: z.enum(["CLIENT", "SERVER"]).default("CLIENT"),
   curseforgeFileId: z.number().int().positive(),
@@ -113,17 +123,29 @@ const updateModVersionSchema = z.object({
 
 modpacksRouter.get("/", async (_req, res, next) => {
   try {
+    const userId = Number(_req.user?.id);
     const result = await db.query(
       `
       SELECT id, nombre,
              version_minecraft AS "versionMinecraft",
              modloader_tipo AS "modloaderTipo",
              modloader_version AS "modloaderVersion",
+             COALESCE((
+               SELECT mm.logo_url
+               FROM modpack_mods mm
+               WHERE mm.modpack_id = modpacks.id
+                 AND mm.logo_url IS NOT NULL
+               ORDER BY mm.id ASC
+               LIMIT 1
+             ), NULL) AS "coverUrl",
+             (SELECT COUNT(*)::INT FROM modpack_mods mm WHERE mm.modpack_id = modpacks.id) AS "modsCount",
              created_at AS "createdAt",
              updated_at AS "updatedAt"
       FROM modpacks
+      WHERE owner_user_id = $1
       ORDER BY id DESC
       `,
+      [userId],
     );
     res.json({ data: result.rows });
   } catch (error) {
@@ -133,11 +155,12 @@ modpacksRouter.get("/", async (_req, res, next) => {
 
 modpacksRouter.post("/", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const data = createModpackSchema.parse(req.body);
     const result = await db.query(
       `
-      INSERT INTO modpacks (nombre, version_minecraft, modloader_tipo, modloader_version)
-      VALUES ($1,$2,$3,$4)
+      INSERT INTO modpacks (owner_user_id, nombre, version_minecraft, modloader_tipo, modloader_version)
+      VALUES ($1,$2,$3,$4,$5)
       RETURNING id, nombre,
                 version_minecraft AS "versionMinecraft",
                 modloader_tipo AS "modloaderTipo",
@@ -145,7 +168,7 @@ modpacksRouter.post("/", async (req, res, next) => {
                 created_at AS "createdAt",
                 updated_at AS "updatedAt"
       `,
-      [data.nombre, data.versionMinecraft, data.modloaderTipo, data.modloaderVersion],
+      [userId, data.nombre, data.versionMinecraft, data.modloaderTipo, data.modloaderVersion],
     );
 
     res.status(201).json({ data: result.rows[0] });
@@ -156,6 +179,7 @@ modpacksRouter.post("/", async (req, res, next) => {
 
 modpacksRouter.get("/:modpackId", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const requestedProfile = normalizeProfile(req.query.profile);
     const modpackId = Number(req.params.modpackId);
     const modpackRes = await db.query(
@@ -167,9 +191,9 @@ modpacksRouter.get("/:modpackId", async (req, res, next) => {
              created_at AS "createdAt",
              updated_at AS "updatedAt"
       FROM modpacks
-      WHERE id = $1
+      WHERE id = $1 AND owner_user_id = $2
       `,
-      [modpackId],
+      [modpackId, userId],
     );
 
     if (!modpackRes.rowCount) {
@@ -202,13 +226,14 @@ modpacksRouter.get("/:modpackId", async (req, res, next) => {
         try {
           const currentFileRes = await getModFile(Number(row.curseforgeProjectId), Number(row.curseforgeFileId));
           const currentDisplayName = currentFileRes?.data?.displayName ?? `fileId ${row.curseforgeFileId}`;
+          const currentReleaseType = Number(currentFileRes?.data?.releaseType ?? 3);
 
           const compatibleFiles = await fetchCompatibleFiles(
             { version_minecraft: modpackRes.rows[0].versionMinecraft, modloader_tipo: modpackRes.rows[0].modloaderTipo },
             Number(row.curseforgeProjectId),
           );
 
-          const newest = compatibleFiles[0];
+          const newest = latestCompatibleForCurrentRelease(compatibleFiles, currentReleaseType);
           const newestId = newest?.id ? Number(newest.id) : null;
           const newestName = newest?.displayName ?? null;
 
@@ -256,8 +281,9 @@ modpacksRouter.get("/:modpackId", async (req, res, next) => {
 
 modpacksRouter.delete("/:modpackId", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
-    const result = await db.query("DELETE FROM modpacks WHERE id = $1", [modpackId]);
+    const result = await db.query("DELETE FROM modpacks WHERE id = $1 AND owner_user_id = $2", [modpackId, userId]);
     if (!result.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
       return;
@@ -274,9 +300,10 @@ modpacksRouter.get("/../mods/search", async (_req, res) => {
 
 modpacksRouter.post("/:modpackId/mods", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const parsed = addModSchema.parse(req.body);
-    const result = await addModWithDependencies({ modpackId, ...parsed });
+    const result = await addModWithDependencies({ userId, modpackId, ...parsed });
     res.json({ data: result });
   } catch (error) {
     next(error);
@@ -285,9 +312,10 @@ modpacksRouter.post("/:modpackId/mods", async (req, res, next) => {
 
 modpacksRouter.post("/:modpackId/profiles/server/clone-from-client", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
 
-    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1", [modpackId]);
+    const modpackRes = await db.query("SELECT id FROM modpacks WHERE id = $1 AND owner_user_id = $2", [modpackId, userId]);
     if (!modpackRes.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
       return;
@@ -323,6 +351,7 @@ modpacksRouter.post("/:modpackId/profiles/server/clone-from-client", async (req,
 
 modpacksRouter.delete("/:modpackId/mods/:projectId", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const projectId = Number(req.params.projectId);
     const profile = normalizeProfile(req.query.profile);
@@ -331,10 +360,11 @@ modpacksRouter.delete("/:modpackId/mods/:projectId", async (req, res, next) => {
       `
       DELETE FROM modpack_mods
       WHERE modpack_id = $1
+        AND EXISTS (SELECT 1 FROM modpacks m WHERE m.id = modpack_id AND m.owner_user_id = $4)
         AND curseforge_project_id = $2
         AND profile = $3
       `,
-      [modpackId, projectId, profile],
+      [modpackId, projectId, profile, userId],
     );
 
     if (!del.rowCount) {
@@ -350,11 +380,12 @@ modpacksRouter.delete("/:modpackId/mods/:projectId", async (req, res, next) => {
 
 modpacksRouter.get("/:modpackId/mods/:projectId/files", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const projectId = Number(req.params.projectId);
     const profile = normalizeProfile(req.query.profile);
 
-    const modpackRes = await db.query("SELECT version_minecraft, modloader_tipo FROM modpacks WHERE id = $1", [modpackId]);
+    const modpackRes = await db.query("SELECT version_minecraft, modloader_tipo FROM modpacks WHERE id = $1 AND owner_user_id = $2", [modpackId, userId]);
     if (!modpackRes.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
       return;
@@ -391,6 +422,7 @@ modpacksRouter.get("/:modpackId/mods/:projectId/files", async (req, res, next) =
 
 modpacksRouter.patch("/:modpackId/mods/:projectId", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.params.modpackId);
     const projectId = Number(req.params.projectId);
     const payload = updateModVersionSchema.parse(req.body);
@@ -400,6 +432,7 @@ modpacksRouter.patch("/:modpackId/mods/:projectId", async (req, res, next) => {
       UPDATE modpack_mods
       SET curseforge_file_id = $4
       WHERE modpack_id = $1
+        AND EXISTS (SELECT 1 FROM modpacks m WHERE m.id = modpack_id AND m.owner_user_id = $5)
         AND curseforge_project_id = $2
         AND profile = $3
       RETURNING id,
@@ -408,7 +441,7 @@ modpacksRouter.patch("/:modpackId/mods/:projectId", async (req, res, next) => {
                 curseforge_project_id AS "curseforgeProjectId",
                 curseforge_file_id AS "curseforgeFileId"
       `,
-      [modpackId, projectId, payload.profile, payload.curseforgeFileId],
+      [modpackId, projectId, payload.profile, payload.curseforgeFileId, userId],
     );
 
     if (!update.rowCount) {
@@ -426,6 +459,7 @@ export const modsSearchRouter = Router();
 
 modsSearchRouter.get("/search", async (req, res, next) => {
   try {
+    const userId = Number(req.user?.id);
     const modpackId = Number(req.query.modpackId);
     if (!modpackId) {
       res.status(400).json({ error: { code: "BAD_REQUEST", message: "modpackId is required" } });
@@ -433,8 +467,8 @@ modsSearchRouter.get("/search", async (req, res, next) => {
     }
 
     const modpackRes = await db.query(
-      "SELECT version_minecraft, modloader_tipo FROM modpacks WHERE id = $1",
-      [modpackId],
+      "SELECT version_minecraft, modloader_tipo FROM modpacks WHERE id = $1 AND owner_user_id = $2",
+      [modpackId, userId],
     );
     if (!modpackRes.rowCount) {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Modpack not found" } });
