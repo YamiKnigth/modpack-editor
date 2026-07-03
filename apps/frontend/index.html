@@ -1,0 +1,1612 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CraftForge Local Server</title>
+    <style>
+      :root {
+        --bg: #141416;
+        --panel: #1c1e22;
+        --line: #2d3139;
+        --accent: #e05320;
+        --text: #ffffff;
+        --muted: #a0a5b0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top right, #2a2d33 0%, var(--bg) 55%);
+        color: var(--text);
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+      .layout {
+        max-width: 1240px;
+        margin: 20px auto;
+        padding: 0 16px;
+      }
+      .topbar {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--accent);
+        padding: 12px 16px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand {
+        font-size: 18px;
+      }
+      .top-actions {
+        display: flex;
+        gap: 16px;
+      }
+      .top-actions button {
+        margin: 0;
+        width: auto;
+        min-width: 160px;
+      }
+      .view {
+        margin-top: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+      h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      label {
+        display: block;
+        margin: 8px 0 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #111318;
+        color: var(--text);
+        padding: 10px;
+        border-radius: 8px;
+      }
+      button {
+        background: linear-gradient(90deg, #c44518, var(--accent));
+        border: none;
+        margin-top: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #2b2f37;
+        border: 1px solid var(--line);
+      }
+      button.ghost {
+        background: transparent;
+        border: 1px solid var(--line);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .modpack-item,
+      .mod-item,
+      .installed-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .mod-item button {
+        width: auto;
+        margin-top: 8px;
+      }
+      .mod-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .mod-result-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .mod-result-row .mod-row {
+        flex: 1;
+        min-width: 0;
+      }
+      .mod-actions-inline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .mod-actions-inline button {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        padding: 0;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 0;
+      }
+      .installed-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+      }
+      .installed-controls select,
+      .installed-controls button {
+        width: auto;
+        margin-top: 0;
+      }
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+      }
+      .icon-btn.secondary {
+        background: #2b2f37;
+        border: 1px solid var(--line);
+      }
+      .icon-btn.danger {
+        background: #5f1f25;
+        border: 1px solid #7e2a33;
+      }
+      .icon-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+      .mod-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .mod-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 6px;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        background: #0e1014;
+      }
+      .mod-body {
+        flex: 1;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .tabs button {
+        margin: 0;
+        width: auto;
+        min-width: 120px;
+        padding: 8px 12px;
+      }
+      .tabs button.active {
+        background: linear-gradient(90deg, #c44518, var(--accent));
+      }
+      .modpack-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .modpack-item .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .modpack-item .actions button {
+        min-width: 90px;
+        width: auto;
+        margin: 0;
+        padding: 8px 10px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 8px 0 10px;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 10px;
+        background: #111318;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .row > * {
+        flex: 1;
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .detail-head {
+        margin-bottom: 12px;
+      }
+      .hidden {
+        display: none;
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 16px;
+      }
+      .modal.hidden {
+        display: none;
+      }
+      .modal-card {
+        width: min(1120px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .cf-hero {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 12px;
+        align-items: start;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+      }
+      .cf-hero .mod-icon {
+        width: 72px;
+        height: 72px;
+      }
+      .cf-title {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+      .cf-sub {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .cf-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .cf-actions a,
+      .cf-actions button {
+        width: auto;
+        margin: 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+      }
+      .cf-actions a {
+        text-decoration: none;
+        color: var(--text);
+        background: linear-gradient(90deg, #c44518, var(--accent));
+      }
+      .cf-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .cf-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: #121419;
+      }
+      .cf-card h4 {
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .cf-meta-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+      .cf-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .cf-tag {
+        font-size: 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 8px;
+        color: var(--muted);
+      }
+      .cf-links a {
+        display: inline-block;
+        margin-right: 8px;
+        margin-bottom: 6px;
+      }
+      .cf-gallery {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 8px;
+      }
+      .cf-gallery a {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111318;
+      }
+      .cf-gallery img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+      }
+      .cf-gallery span {
+        display: block;
+        padding: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .cf-videos {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 10px;
+      }
+      .cf-video iframe,
+      .cf-video video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border: 0;
+        border-radius: 8px;
+        background: #000;
+      }
+      .cf-video .muted {
+        margin-top: 4px;
+        font-size: 11px;
+      }
+      .cf-description {
+        max-height: 360px;
+        overflow: auto;
+        line-height: 1.45;
+      }
+      .cf-description h1,
+      .cf-description h2,
+      .cf-description h3,
+      .cf-description h4,
+      .cf-description h5,
+      .cf-description h6 {
+        margin: 10px 0 6px;
+      }
+      .cf-description p,
+      .cf-description ul,
+      .cf-description ol,
+      .cf-description pre,
+      .cf-description blockquote {
+        margin: 8px 0;
+      }
+      .cf-description code,
+      .cf-description pre {
+        background: #101217;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px;
+      }
+      .cf-description img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+      }
+      .cf-description table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .cf-description th,
+      .cf-description td {
+        border: 1px solid var(--line);
+        padding: 6px;
+      }
+      .cf-files {
+        margin-top: 10px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .cf-files table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 640px;
+      }
+      .cf-files th,
+      .cf-files td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .cf-files th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      @media (max-width: 900px) {
+        .cf-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .pagination {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .pagination button {
+        width: auto;
+        min-width: 110px;
+        margin: 0;
+      }
+      @media (max-width: 900px) {
+        .dashboard-grid,
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .top-actions {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="topbar">
+        <div class="brand">CraftForge Local Server | Dashboard</div>
+        <div class="top-actions">
+          <button class="secondary" id="btnDashboard">Dashboard</button>
+          <button id="btnCrear">Crear Modpack</button>
+        </div>
+      </div>
+
+      <section class="view" id="viewDashboard">
+        <div class="dashboard-grid">
+          <section class="card">
+            <h2>Mis Modpacks</h2>
+            <div id="modpacksList"></div>
+          </section>
+          <section class="card">
+            <h2>Actividad</h2>
+            <pre id="log" class="muted"></pre>
+          </section>
+        </div>
+      </section>
+
+      <section class="view hidden" id="viewCreate">
+        <section class="card">
+          <h2>Crear Modpack</h2>
+          <form id="formCreate">
+            <label>Nombre</label>
+            <input id="nombre" required minlength="3" maxlength="150" placeholder="Mi Modpack Tecnico" />
+
+            <div class="row">
+              <div>
+                <label>Version Minecraft</label>
+                <select id="versionMinecraft" required></select>
+              </div>
+              <div>
+                <label>Loader</label>
+                <select id="loaderFamily" required></select>
+              </div>
+              <div>
+                <label>Version Loader</label>
+                <select id="loaderVersion" required></select>
+              </div>
+            </div>
+            <button type="submit" id="btnSubmitCreate">Crear Modpack</button>
+          </form>
+        </section>
+      </section>
+
+      <section class="view hidden" id="viewDetail">
+        <div class="detail-head card">
+          <h2 id="detailTitle">Modpack</h2>
+          <div class="muted" id="detailMeta"></div>
+          <div class="tabs" id="profileTabs">
+            <button class="secondary active" id="tabClient">Cliente</button>
+            <button class="secondary" id="tabServer">Servidor</button>
+            <button class="ghost" id="btnCloneServer" style="margin-left:auto; width:auto">Crear copia Servidor</button>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <section class="card">
+            <h3>Buscar Mods</h3>
+            <label>Texto de busqueda</label>
+            <div class="row">
+              <input id="searchText" placeholder="Ej: create" />
+              <button class="secondary" id="btnSearch" style="max-width:160px">Buscar</button>
+            </div>
+            <label>Orden</label>
+            <select id="searchSortBy">
+              <option value="relevancy">relevancy</option>
+              <option value="featured">featured</option>
+              <option value="popularity">popularity</option>
+              <option value="lastUpdated">lastUpdated</option>
+            </select>
+            <p class="muted" id="searchHint"></p>
+            <div class="chips" id="searchChips"></div>
+            <div id="modsResults"></div>
+            <div class="pagination">
+              <button class="ghost" id="btnPrevPage">Anterior</button>
+              <span class="muted" id="pageInfo">Pagina 1</span>
+              <button class="ghost" id="btnNextPage">Siguiente</button>
+            </div>
+          </section>
+          <section class="card">
+            <h3>Mods Instalados</h3>
+            <div id="installedMods"></div>
+
+            <h3 style="margin-top:16px">Exportar</h3>
+            <label>Target</label>
+            <select id="exportTarget">
+              <option value="CLIENT">CLIENT</option>
+              <option value="SERVER">SERVER</option>
+              <option value="BOTH">BOTH</option>
+            </select>
+            <label>Formato</label>
+            <select id="exportFormat">
+              <option value="MODS_ZIP">ZIP de mods (.jar)</option>
+              <option value="CURSEFORGE_ZIP">ZIP CurseForge (manifest)</option>
+            </select>
+            <button id="btnExport">Encolar Export</button>
+            <div class="muted" id="exportStatus"></div>
+            <a id="exportDownload" class="muted hidden" href="#" target="_blank" rel="noopener">Descargar export</a>
+
+            <h3 style="margin-top:16px">Importar CurseForge</h3>
+            <label>ZIP CurseForge</label>
+            <input id="importCurseforgeZip" type="file" accept=".zip,application/zip" />
+            <button class="secondary" id="btnImportCurseforge">Importar ZIP CurseForge</button>
+            <div class="muted" id="importStatus"></div>
+            <button class="ghost" id="btnBackDashboard">Volver al Dashboard</button>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal hidden" id="modDetailsModal">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3 id="modModalTitle">Detalle Mod</h3>
+          <button class="ghost" id="btnCloseModModal" style="width:auto; margin:0">Cerrar</button>
+        </div>
+        <div id="modModalBody" class="muted"></div>
+      </div>
+    </div>
+
+    <script>
+      const API = "/api/v1";
+      const state = {
+        selectedModpackId: null,
+        versions: [],
+        currentModloaders: [],
+        currentModpackMeta: null,
+        activeProfile: "CLIENT",
+        installedProjectIds: new Set(),
+        modVersionOptions: new Map(),
+        search: {
+          index: 0,
+          pageSize: 20,
+          totalCount: 0,
+          lastQuery: "",
+          sortBy: "relevancy",
+        },
+      };
+
+      function log(message) {
+        const el = document.getElementById("log");
+        el.textContent = `[${new Date().toLocaleTimeString()}] ${message}\n` + el.textContent;
+      }
+
+      function showView(name) {
+        document.getElementById("viewDashboard").classList.toggle("hidden", name !== "dashboard");
+        document.getElementById("viewCreate").classList.toggle("hidden", name !== "create");
+        document.getElementById("viewDetail").classList.toggle("hidden", name !== "detail");
+      }
+
+      async function apiFetch(url, options = {}) {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        const payload = text ? JSON.parse(text) : null;
+        if (!res.ok) {
+          const msg = payload?.error?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        return payload;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function stripHtmlToText(value) {
+        return String(value ?? "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function sanitizeDescriptionHtml(value) {
+        const raw = String(value ?? "").trim();
+        if (!raw) return "";
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(raw, "text/html");
+
+        doc.querySelectorAll("script,style,iframe,object,embed,form,button,input,meta").forEach((el) => el.remove());
+
+        doc.querySelectorAll("*").forEach((el) => {
+          [...el.attributes].forEach((attr) => {
+            const key = attr.name.toLowerCase();
+            const val = attr.value || "";
+            if (key.startsWith("on")) {
+              el.removeAttribute(attr.name);
+              return;
+            }
+            if ((key === "href" || key === "src") && /^\s*javascript:/i.test(val)) {
+              el.removeAttribute(attr.name);
+              return;
+            }
+            if (key === "style") {
+              el.removeAttribute(attr.name);
+            }
+          });
+
+          if (el.tagName.toLowerCase() === "a") {
+            el.setAttribute("target", "_blank");
+            el.setAttribute("rel", "noopener");
+          }
+        });
+
+        return doc.body.innerHTML;
+      }
+
+      function formatDate(value) {
+        if (!value) return "N/A";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "N/A";
+        return date.toLocaleString();
+      }
+
+      function formatNumber(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "N/A";
+        return n.toLocaleString();
+      }
+
+      function iconSvg(name) {
+        const icons = {
+          add: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M11 5h2v14h-2z'/><path d='M5 11h14v2H5z'/></svg>",
+          check: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M9.2 16.6 4.9 12.3l1.4-1.4 2.9 2.9 8.5-8.5 1.4 1.4z'/></svg>",
+          link: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M10.6 13.4 9.2 12l4.2-4.2a3 3 0 1 1 4.2 4.2L15.9 13l1.4 1.4 1.7-1.7a5 5 0 1 0-7.1-7.1z'/><path d='M13.4 10.6 14.8 12l-4.2 4.2a3 3 0 1 1-4.2-4.2L8.1 11 6.7 9.6 5 11.3a5 5 0 1 0 7.1 7.1z'/></svg>",
+          block: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 2a8 8 0 0 1 5.6 2.3L6.3 17.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-5.6-2.3L17.7 6.4A8 8 0 0 1 12 20Z'/></svg>",
+          remove: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M7 11h10v2H7z'/></svg>",
+          update: "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z'/></svg>",
+        };
+        return icons[name] || icons.block;
+      }
+
+      function shouldOpenDetailFromClick(event) {
+        const target = event?.target;
+        if (!(target instanceof Element)) return true;
+        return !target.closest("button,select,input,a,label,textarea,.installed-controls,.mod-actions-inline");
+      }
+
+      function toEmbedVideoUrl(rawUrl) {
+        const input = String(rawUrl ?? "").trim();
+        if (!input) return null;
+
+        try {
+          const u = new URL(input);
+
+          if (u.hostname.includes("youtu.be")) {
+            const id = u.pathname.replace(/^\//, "");
+            return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+          }
+
+          if (u.hostname.includes("youtube.com")) {
+            if (u.pathname === "/watch") {
+              const id = u.searchParams.get("v");
+              return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+            }
+            if (u.pathname.startsWith("/embed/")) return u.toString();
+          }
+
+          if (u.hostname.includes("vimeo.com")) {
+            const parts = u.pathname.split("/").filter(Boolean);
+            const id = parts[parts.length - 1];
+            if (id && /^\d+$/.test(id)) return `https://player.vimeo.com/video/${id}`;
+            if (u.hostname.includes("player.vimeo.com")) return u.toString();
+          }
+
+          if (/\.(mp4|webm|ogg)$/i.test(u.pathname)) {
+            return u.toString();
+          }
+
+          return null;
+        } catch {
+          return null;
+        }
+      }
+
+      function loaderFamiliesForVersion(versionMinecraft) {
+        const families = new Set(
+          state.currentModloaders
+            .filter((m) => m.versionMinecraft === versionMinecraft)
+            .map((m) => m.loaderFamily),
+        );
+        return Array.from(families);
+      }
+
+      function loaderVersions(versionMinecraft, loaderFamily) {
+        return state.currentModloaders
+          .filter((m) => m.versionMinecraft === versionMinecraft && m.loaderFamily === loaderFamily)
+          .sort((a, b) => Number(b.recommended) - Number(a.recommended) || Number(b.latest) - Number(a.latest));
+      }
+
+      async function refillLoaderFamilies() {
+        const versionEl = document.getElementById("versionMinecraft");
+        const loaderFamilyEl = document.getElementById("loaderFamily");
+        const selectedVersion = versionEl.value;
+
+        const loadersRes = await apiFetch(
+          `${API}/system/minecraft/loaders-cascade?versionMinecraft=${encodeURIComponent(selectedVersion)}`,
+        );
+        state.currentModloaders = Array.isArray(loadersRes?.data?.loaderFamilies)
+          ? loadersRes.data.loaderFamilies.flatMap((f) => f.versions)
+          : [];
+
+        const families = loaderFamiliesForVersion(selectedVersion);
+
+        loaderFamilyEl.innerHTML = "";
+        if (!families.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Sin loaders disponibles";
+          loaderFamilyEl.appendChild(opt);
+          document.getElementById("loaderVersion").innerHTML = "";
+          return;
+        }
+
+        families.forEach((family) => {
+          const opt = document.createElement("option");
+          opt.value = family;
+          opt.textContent = family;
+          loaderFamilyEl.appendChild(opt);
+        });
+
+        refillLoaderVersions();
+      }
+
+      function refillLoaderVersions() {
+        const versionEl = document.getElementById("versionMinecraft");
+        const loaderFamilyEl = document.getElementById("loaderFamily");
+        const loaderVersionEl = document.getElementById("loaderVersion");
+        const versions = loaderVersions(versionEl.value, loaderFamilyEl.value);
+
+        loaderVersionEl.innerHTML = "";
+        if (!versions.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Sin versiones para ese loader";
+          loaderVersionEl.appendChild(opt);
+          return;
+        }
+
+        versions.forEach((item) => {
+          const opt = document.createElement("option");
+          opt.value = item.loaderVersion;
+          const flags = [item.recommended ? "recommended" : "", item.latest ? "latest" : ""]
+            .filter(Boolean)
+            .join(", ");
+          opt.textContent = flags ? `${item.loaderVersion} (${flags})` : item.loaderVersion;
+          loaderVersionEl.appendChild(opt);
+        });
+      }
+
+      async function loadCreateCatalog() {
+        const [versionsRes, loadersRes] = await Promise.all([
+          apiFetch(`${API}/system/minecraft/versions`),
+          apiFetch(`${API}/system/minecraft/loaders-cascade?versionMinecraft=1.20.1`),
+        ]);
+
+        state.versions = Array.isArray(versionsRes.data) ? versionsRes.data : [];
+        state.currentModloaders = Array.isArray(loadersRes?.data?.loaderFamilies)
+          ? loadersRes.data.loaderFamilies.flatMap((f) => f.versions)
+          : [];
+
+        const versionsEl = document.getElementById("versionMinecraft");
+        versionsEl.innerHTML = "";
+
+        state.versions
+          .filter((v) => String(v).includes("."))
+          .forEach((v) => {
+            const opt = document.createElement("option");
+            opt.value = v;
+            opt.textContent = v;
+            versionsEl.appendChild(opt);
+          });
+
+        if (versionsEl.options.length > 0) {
+          versionsEl.value = "1.20.1";
+          if (versionsEl.value !== "1.20.1") {
+            versionsEl.selectedIndex = 0;
+          }
+        }
+
+        await refillLoaderFamilies();
+      }
+
+      async function createModpack(event) {
+        event.preventDefault();
+        const btn = document.getElementById("btnSubmitCreate");
+        btn.disabled = true;
+
+        const payload = {
+          nombre: document.getElementById("nombre").value,
+          versionMinecraft: document.getElementById("versionMinecraft").value,
+          modloaderTipo: document.getElementById("loaderFamily").value,
+          modloaderVersion: document.getElementById("loaderVersion").value,
+        };
+
+        if (!payload.modloaderTipo || !payload.modloaderVersion) {
+          alert("Selecciona una version de Minecraft con loaders disponibles.");
+          btn.disabled = false;
+          return;
+        }
+
+        try {
+          const created = await apiFetch(`${API}/modpacks`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          state.selectedModpackId = Number(created.data.id);
+          log(`Modpack creado ID=${state.selectedModpackId}`);
+          await loadDashboard();
+          await openModpackDetail(state.selectedModpackId);
+          showView("detail");
+        } catch (error) {
+          log(`Error creando modpack: ${error.message}`);
+          alert(`No se pudo crear el modpack: ${error.message}`);
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function loadDashboard() {
+        const response = await apiFetch(`${API}/modpacks`);
+        const root = document.getElementById("modpacksList");
+        root.innerHTML = "";
+
+        if (!response.data.length) {
+          root.innerHTML = "<p class='muted'>Aun no hay modpacks creados.</p>";
+          return;
+        }
+
+        response.data.forEach((m) => {
+          const div = document.createElement("div");
+          div.className = "modpack-item";
+          div.innerHTML = `
+            <div>
+              <strong>${m.nombre}</strong>
+              <div class='muted'>${m.versionMinecraft} | ${m.modloaderTipo} ${m.modloaderVersion}</div>
+            </div>
+            <div class='actions'>
+              <button class='secondary' data-open='${m.id}'>Abrir</button>
+              <button class='ghost' data-del='${m.id}'>Eliminar</button>
+            </div>
+          `;
+          root.appendChild(div);
+        });
+
+        root.querySelectorAll("button[data-open]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = Number(btn.getAttribute("data-open"));
+            await openModpackDetail(id);
+            showView("detail");
+          });
+        });
+
+        root.querySelectorAll("button[data-del]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = Number(btn.getAttribute("data-del"));
+            if (!confirm(`Eliminar modpack ${id}?`)) return;
+            await apiFetch(`${API}/modpacks/${id}`, { method: "DELETE" });
+            log(`Modpack eliminado ID=${id}`);
+            await loadDashboard();
+          });
+        });
+      }
+
+      async function openModpackDetail(modpackId) {
+        state.selectedModpackId = Number(modpackId);
+        const detail = await apiFetch(
+          `${API}/modpacks/${state.selectedModpackId}?profile=${encodeURIComponent(state.activeProfile)}`,
+        );
+        const modpack = detail.data;
+        state.currentModpackMeta = {
+          versionMinecraft: modpack.versionMinecraft,
+          modloaderTipo: modpack.modloaderTipo,
+          modloaderVersion: modpack.modloaderVersion,
+        };
+        state.installedProjectIds = new Set((modpack.mods || []).map((m) => Number(m.curseforgeProjectId)));
+        state.search.index = 0;
+        state.search.totalCount = 0;
+
+        document.getElementById("detailTitle").textContent = modpack.nombre;
+        document.getElementById("detailMeta").textContent = `Minecraft ${modpack.versionMinecraft} | ${modpack.modloaderTipo} ${modpack.modloaderVersion} | Perfil ${state.activeProfile}`;
+        document.getElementById("searchSortBy").value = state.search.sortBy;
+        document.getElementById("searchHint").textContent = `Busqueda filtrada automaticamente por ${modpack.modloaderTipo} y ${modpack.versionMinecraft}`;
+        document.getElementById("tabClient").classList.toggle("active", state.activeProfile === "CLIENT");
+        document.getElementById("tabServer").classList.toggle("active", state.activeProfile === "SERVER");
+        document.getElementById("btnCloneServer").disabled = state.activeProfile !== "CLIENT";
+        renderSearchChips();
+        renderPagination();
+
+        renderInstalledMods(modpack.mods || []);
+      }
+
+      function renderSearchChips() {
+        const root = document.getElementById("searchChips");
+        root.innerHTML = "";
+        if (!state.currentModpackMeta) return;
+
+        const chips = [
+          `Minecraft ${state.currentModpackMeta.versionMinecraft}`,
+          `Loader ${state.currentModpackMeta.modloaderTipo}`,
+          `Loader Version ${state.currentModpackMeta.modloaderVersion}`,
+          `Perfil ${state.activeProfile}`,
+          `Sort ${state.search.sortBy}`,
+          "Fuente CurseForge Web",
+        ];
+
+        chips.forEach((label) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = label;
+          root.appendChild(chip);
+        });
+      }
+
+      async function openModDetails(projectId) {
+        const modal = document.getElementById("modDetailsModal");
+        const title = document.getElementById("modModalTitle");
+        const body = document.getElementById("modModalBody");
+        modal.classList.remove("hidden");
+        title.textContent = `Mod ${projectId}`;
+        body.innerHTML = "Cargando...";
+
+        try {
+          const result = await apiFetch(`${API}/mods/${projectId}`);
+          const d = result.data;
+          title.textContent = d.name || `Mod ${projectId}`;
+          const authorText = (d.authors || []).join(", ") || "N/A";
+          const createdText = formatDate(d.dateCreated);
+          const releasedText = formatDate(d.dateReleased);
+          const modifiedText = formatDate(d.dateModified);
+          const links = d.links || {};
+
+          const categoryHtml = (Array.isArray(d.categories) ? d.categories : [])
+            .map((c) => `<span class='cf-tag'>${escapeHtml(c.name || c.slug || `cat-${c.id}`)}</span>`)
+            .join("");
+
+          const screenshotsHtml = (Array.isArray(d.screenshots) ? d.screenshots : [])
+            .filter((s) => s?.url || s?.thumbnailUrl)
+            .slice(0, 20)
+            .map((s) => {
+              const full = s.url || s.thumbnailUrl;
+              const thumb = s.thumbnailUrl || s.url;
+              const label = s.title || s.description || "Screenshot";
+              return `<a href='${escapeHtml(full)}' target='_blank' rel='noopener'><img src='${escapeHtml(thumb)}' alt='${escapeHtml(label)}' /><span>${escapeHtml(label)}</span></a>`;
+            })
+            .join("");
+
+          const videosHtml = (Array.isArray(d.videos) ? d.videos : [])
+            .slice(0, 12)
+            .map((url) => {
+              const embed = toEmbedVideoUrl(url);
+              if (!embed) {
+                return `<div class='cf-video'><div class='muted'><a href='${escapeHtml(url)}' target='_blank' rel='noopener'>${escapeHtml(url)}</a></div></div>`;
+              }
+              if (/\.(mp4|webm|ogg)$/i.test(embed)) {
+                return `<div class='cf-video'><video controls src='${escapeHtml(embed)}'></video><div class='muted'>${escapeHtml(url)}</div></div>`;
+              }
+              return `<div class='cf-video'><iframe src='${escapeHtml(embed)}' loading='lazy' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' allowfullscreen></iframe><div class='muted'>${escapeHtml(url)}</div></div>`;
+            })
+            .join("");
+
+          const filesHtml = (Array.isArray(d.latestFiles) ? d.latestFiles : [])
+            .slice(0, 15)
+            .map(
+              (f) => `
+                <tr>
+                  <td>${escapeHtml(f.displayName || f.fileName || `file-${f.id}`)}</td>
+                  <td>${escapeHtml(f.fileDate ? new Date(f.fileDate).toLocaleDateString() : "N/A")}</td>
+                  <td>${escapeHtml(String(f.releaseType ?? "N/A"))}</td>
+                  <td>${escapeHtml(Array.isArray(f.gameVersions) ? f.gameVersions.slice(0, 5).join(", ") : "N/A")}</td>
+                  <td>${escapeHtml(formatNumber(f.downloadCount))}</td>
+                </tr>
+              `,
+            )
+            .join("");
+
+          const descriptionHtml = sanitizeDescriptionHtml(d.descriptionHtml || "");
+          const fallbackDescription = escapeHtml(stripHtmlToText(d.summary || "Sin descripcion"));
+
+          body.innerHTML = `
+            <div class='cf-hero'>
+              <img class='mod-icon' src='${d.logoUrl || ""}' alt='${d.name || "Mod"}' onerror='this.style.visibility="hidden"' />
+              <div>
+                <div class='cf-title'>${escapeHtml(d.name || `Mod ${projectId}`)}</div>
+                <div class='cf-sub'>Por ${escapeHtml(authorText)}</div>
+                <div class='cf-actions'>
+                  ${d.websiteUrl ? `<a href='${escapeHtml(d.websiteUrl)}' target='_blank' rel='noopener'>Ver en CurseForge</a>` : ""}
+                  ${d.websiteUrl ? "<button class='ghost' id='btnCopyModLink'>Copiar enlace</button>" : ""}
+                </div>
+              </div>
+            </div>
+
+            <div class='cf-card' style='margin-bottom:10px'>
+              <h4>Descripcion</h4>
+              <div class='cf-description'>${descriptionHtml || fallbackDescription}</div>
+            </div>
+
+            <div class='cf-grid'>
+              <div class='cf-card'>
+                <h4>Metadatos</h4>
+                <div class='cf-meta-list'>
+                  <div class='muted'>ProjectId: ${escapeHtml(d.projectId)}</div>
+                  <div class='muted'>Slug: ${escapeHtml(d.slug || "N/A")}</div>
+                  <div class='muted'>ClassId: ${escapeHtml(d.classId ?? "N/A")}</div>
+                  <div class='muted'>GameId: ${escapeHtml(d.gameId ?? "N/A")}</div>
+                  <div class='muted'>Descargas: ${escapeHtml(formatNumber(d.stats?.downloadCount ?? d.downloadCount))}</div>
+                  <div class='muted'>Likes: ${escapeHtml(formatNumber(d.stats?.thumbsUpCount))}</div>
+                  <div class='muted'>Creado: ${escapeHtml(createdText)}</div>
+                  <div class='muted'>Publicado: ${escapeHtml(releasedText)}</div>
+                  <div class='muted'>Actualizado: ${escapeHtml(modifiedText)}</div>
+                  <div class='muted'>Disponible: ${escapeHtml(d.status?.isAvailable ?? "N/A")}</div>
+                </div>
+              </div>
+              <div class='cf-card'>
+                <h4>Categorias</h4>
+                <div class='cf-tags'>${categoryHtml || "<span class='muted'>Sin categorias</span>"}</div>
+              </div>
+              <div class='cf-card'>
+                <h4>Enlaces</h4>
+                <div class='cf-links'>
+                  ${links.websiteUrl ? `<a href='${escapeHtml(links.websiteUrl)}' target='_blank' rel='noopener'>Website</a>` : ""}
+                  ${links.wikiUrl ? `<a href='${escapeHtml(links.wikiUrl)}' target='_blank' rel='noopener'>Wiki</a>` : ""}
+                  ${links.issuesUrl ? `<a href='${escapeHtml(links.issuesUrl)}' target='_blank' rel='noopener'>Issues</a>` : ""}
+                  ${links.sourceUrl ? `<a href='${escapeHtml(links.sourceUrl)}' target='_blank' rel='noopener'>Source</a>` : ""}
+                  ${!links.websiteUrl && !links.wikiUrl && !links.issuesUrl && !links.sourceUrl ? "<span class='muted'>Sin enlaces adicionales</span>" : ""}
+                </div>
+              </div>
+            </div>
+
+            <div class='cf-card' style='margin-top:10px'>
+              <h4>Screenshots</h4>
+              <div class='cf-gallery'>${screenshotsHtml || "<span class='muted'>No hay screenshots publicados</span>"}</div>
+            </div>
+
+            <div class='cf-card' style='margin-top:10px'>
+              <h4>Videos</h4>
+              <div class='cf-videos'>${videosHtml || "<span class='muted'>No se detectaron videos en la descripcion o pagina del proyecto</span>"}</div>
+            </div>
+
+            <div class='cf-card' style='margin-top:10px'>
+              <h4>Archivos recientes</h4>
+              <div class='cf-files'>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Archivo</th>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Versiones</th>
+                      <th>Descargas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${filesHtml || "<tr><td colspan='5'>Sin archivos recientes</td></tr>"}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+          const copyBtn = document.getElementById("btnCopyModLink");
+          if (copyBtn && d.websiteUrl) {
+            copyBtn.addEventListener("click", async () => {
+              await navigator.clipboard.writeText(d.websiteUrl);
+              log(`Enlace copiado: ${d.websiteUrl}`);
+            });
+          }
+        } catch (error) {
+          body.innerHTML = `No se pudo cargar el detalle: ${error.message}`;
+        }
+      }
+
+      function closeModDetails() {
+        document.getElementById("modDetailsModal").classList.add("hidden");
+      }
+
+      function renderPagination() {
+        const info = document.getElementById("pageInfo");
+        const prev = document.getElementById("btnPrevPage");
+        const next = document.getElementById("btnNextPage");
+
+        const page = Math.floor(state.search.index / state.search.pageSize) + 1;
+        const totalPages = Math.max(1, Math.ceil((state.search.totalCount || 0) / state.search.pageSize));
+        info.textContent = `Pagina ${page} de ${totalPages}`;
+
+        prev.disabled = state.search.index <= 0;
+        next.disabled = page >= totalPages;
+      }
+
+      function renderInstalledMods(mods) {
+        const root = document.getElementById("installedMods");
+        root.innerHTML = "";
+        if (!mods.length) {
+          root.innerHTML = "<p class='muted'>No hay mods instalados aun.</p>";
+          return;
+        }
+
+        const sorted = [...mods].sort((a, b) => Number(b.hasUpdate) - Number(a.hasUpdate));
+
+        sorted.forEach((m) => {
+          const div = document.createElement("div");
+          div.className = "installed-item";
+          div.style.cursor = "pointer";
+          const dep = m.esDependencia ? "Dependencia" : "Manual";
+          div.innerHTML = `
+            <div class='mod-row'>
+              <img class='mod-icon' src='${m.logoUrl || ""}' alt='${m.nombreMod}' onerror='this.style.visibility="hidden"' />
+              <div class='mod-body'>
+                <strong>${m.nombreMod}</strong>
+                <div class='muted'>projectId: ${m.curseforgeProjectId} | ${dep} | perfil: ${m.profile} | entorno: ${m.entornoDestino}</div>
+                <div class='muted'>Version actual: ${m.currentVersionDisplayName || `fileId ${m.curseforgeFileId}`}</div>
+                <div class='installed-controls'>
+                  <select id='versionSel-${m.curseforgeProjectId}'></select>
+                  <button class='icon-btn danger' id='btnRemoveMod-${m.curseforgeProjectId}' title='Remover mod' aria-label='Remover mod'>${iconSvg("remove")}</button>
+                  ${m.hasUpdate && m.latestVersionFileId ? `<button class='icon-btn' id='btnUpdateMod-${m.curseforgeProjectId}' title='Actualizar a la ultima version' aria-label='Actualizar a la ultima version'>${iconSvg("update")}</button>` : ""}
+                </div>
+              </div>
+            </div>
+          `;
+          root.appendChild(div);
+          div.addEventListener("click", (event) => {
+            if (!shouldOpenDetailFromClick(event)) return;
+            openModDetails(m.curseforgeProjectId);
+          });
+
+          const sel = div.querySelector(`#versionSel-${m.curseforgeProjectId}`);
+          sel.innerHTML = `<option value='${m.curseforgeFileId}'>${m.currentVersionDisplayName || `fileId ${m.curseforgeFileId}`}</option>`;
+          loadModVersionsOptions(m.curseforgeProjectId, sel, m.curseforgeFileId).catch(() => {
+            // noop, mantiene opcion actual si falla la carga
+          });
+
+          sel.addEventListener("change", async (event) => {
+            event.stopPropagation();
+            const selected = Number(sel.value);
+            if (!selected || selected === Number(m.curseforgeFileId)) return;
+            await changeModVersion(m.curseforgeProjectId, selected);
+          });
+
+          div.querySelector(`#btnRemoveMod-${m.curseforgeProjectId}`).addEventListener("click", async (event) => {
+            event.stopPropagation();
+            await removeInstalledMod(m.curseforgeProjectId);
+          });
+
+          const updateBtn = div.querySelector(`#btnUpdateMod-${m.curseforgeProjectId}`);
+          if (updateBtn) {
+            updateBtn.addEventListener("click", async (event) => {
+              event.stopPropagation();
+              await changeModVersion(m.curseforgeProjectId, Number(m.latestVersionFileId));
+            });
+          }
+        });
+      }
+
+      async function loadModVersionsOptions(projectId, selectEl, currentFileId) {
+        const cacheKey = `${state.selectedModpackId}:${state.activeProfile}:${projectId}`;
+        let options = state.modVersionOptions.get(cacheKey);
+        if (!options) {
+          const result = await apiFetch(
+            `${API}/modpacks/${state.selectedModpackId}/mods/${projectId}/files?profile=${encodeURIComponent(state.activeProfile)}`,
+          );
+          options = result.data || [];
+          state.modVersionOptions.set(cacheKey, options);
+        }
+
+        selectEl.innerHTML = "";
+        options.forEach((item) => {
+          const opt = document.createElement("option");
+          opt.value = String(item.fileId);
+          opt.textContent = item.displayName;
+          if (Number(item.fileId) === Number(currentFileId)) {
+            opt.selected = true;
+          }
+          selectEl.appendChild(opt);
+        });
+      }
+
+      async function changeModVersion(projectId, fileId) {
+        if (!fileId) return;
+        await apiFetch(`${API}/modpacks/${state.selectedModpackId}/mods/${projectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile: state.activeProfile, curseforgeFileId: fileId }),
+        });
+        log(`Version actualizada para mod ${projectId} -> fileId ${fileId}`);
+        await openModpackDetail(state.selectedModpackId);
+      }
+
+      async function removeInstalledMod(projectId) {
+        await apiFetch(
+          `${API}/modpacks/${state.selectedModpackId}/mods/${projectId}?profile=${encodeURIComponent(state.activeProfile)}`,
+          { method: "DELETE" },
+        );
+        log(`Mod removido ${projectId} del perfil ${state.activeProfile}`);
+        await openModpackDetail(state.selectedModpackId);
+      }
+
+      async function searchMods(options = { reset: false }) {
+        if (!state.selectedModpackId) {
+          log("Primero crea o selecciona un modpack");
+          return;
+        }
+
+        if (options.reset) {
+          state.search.index = 0;
+        }
+
+        const q = document.getElementById("searchText").value.trim();
+        state.search.sortBy = document.getElementById("searchSortBy").value || "relevancy";
+        state.search.lastQuery = q;
+        const page = Math.floor(state.search.index / state.search.pageSize) + 1;
+        const query = q ? `&searchFilter=${encodeURIComponent(q)}` : "";
+        const result = await apiFetch(
+          `${API}/mods/search?modpackId=${state.selectedModpackId}${query}&pageSize=${state.search.pageSize}&index=${state.search.index}&page=${page}&sortBy=${encodeURIComponent(state.search.sortBy)}&source=web&profile=${encodeURIComponent(state.activeProfile)}`,
+        );
+        const root = document.getElementById("modsResults");
+        root.innerHTML = "";
+
+        state.search.totalCount = Number(result?.pagination?.totalCount ?? 0);
+        renderPagination();
+
+        if (!result.data.length) {
+          root.innerHTML = "<p class='muted'>No se encontraron mods para ese filtro.</p>";
+          return;
+        }
+
+        result.data.forEach((m) => {
+          const firstFile = m.latestFiles?.[0];
+          const isModsClass = (m.className ?? "Mods") === "Mods";
+          const isIncluded = m.inclusionStatus === "INCLUDED" || state.installedProjectIds.has(Number(m.projectId));
+          const isOtherProfile = m.inclusionStatus === "ADDED_OTHER_PROFILE";
+          const canAdd = isModsClass && !!firstFile?.fileId && !isIncluded;
+          const div = document.createElement("div");
+          div.className = "mod-item";
+          div.style.cursor = "pointer";
+          div.innerHTML = `
+            <div class='mod-result-row'>
+              <div class='mod-row'>
+                <img class='mod-icon' src='${m.logoUrl || ""}' alt='${m.name}' onerror='this.style.visibility="hidden"' />
+                <div class='mod-body'>
+                  <strong>${m.name}</strong>
+                  <div class='muted'>${m.className ? `Clase: ${m.className} | ` : ""}${m.summary || "Sin descripcion"}</div>
+                </div>
+              </div>
+              <div class='mod-actions-inline' id='actions-${m.projectId}'>
+              </div>
+            </div>
+          `;
+          div.addEventListener("click", (event) => {
+            if (!shouldOpenDetailFromClick(event)) return;
+            openModDetails(m.projectId);
+          });
+          const btn = document.createElement("button");
+          btn.className = "icon-btn";
+          btn.innerHTML = isIncluded
+            ? iconSvg("check")
+            : isOtherProfile
+              ? iconSvg("link")
+              : canAdd
+                ? iconSvg("add")
+                : iconSvg("block");
+          btn.title = isIncluded
+            ? "Incluido"
+            : isOtherProfile
+              ? "Agregado en otro perfil"
+              : canAdd
+                ? "Agregar mod"
+                : m.className && m.className !== "Mods"
+                  ? "No es mod"
+                  : "Sin archivo compatible";
+          btn.disabled = !canAdd;
+          btn.onclick = async (event) => {
+            event.stopPropagation();
+            await addMod(m.projectId, firstFile?.fileId);
+          };
+          div.querySelector(`#actions-${m.projectId}`).appendChild(btn);
+          root.appendChild(div);
+        });
+        log(`Busqueda completada: ${result.data.length} resultados`);
+      }
+
+      async function addMod(projectId, fileId) {
+        if (!fileId) {
+          log("Este mod no trae archivo compatible en latestFiles");
+          return;
+        }
+
+        const result = await apiFetch(`${API}/modpacks/${state.selectedModpackId}/mods`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            curseforgeProjectId: projectId,
+            curseforgeFileId: fileId,
+            profile: state.activeProfile,
+            entornoDestino: "BOTH",
+          }),
+        });
+
+        log(
+          `Agregado mod ${projectId}; creados=${result.data.created.length}, omitidos=${result.data.skipped.length}`,
+        );
+        await openModpackDetail(state.selectedModpackId);
+        await searchMods({ reset: false });
+      }
+
+      async function enqueueExport() {
+        if (!state.selectedModpackId) {
+          log("Primero selecciona modpack");
+          return;
+        }
+        const target = document.getElementById("exportTarget").value;
+        const format = document.getElementById("exportFormat").value;
+        const result = await apiFetch(`${API}/modpacks/${state.selectedModpackId}/exports`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target, format }),
+        });
+
+        log(`Export encolado job=${result.data.id} format=${format}`);
+        await watchExport(result.data.id);
+      }
+
+      async function watchExport(jobId) {
+        const statusEl = document.getElementById("exportStatus");
+        const downloadEl = document.getElementById("exportDownload");
+        downloadEl.classList.add("hidden");
+
+        for (let i = 0; i < 30; i += 1) {
+          const data = await apiFetch(`${API}/exports/${jobId}`);
+          statusEl.textContent = `Export ${jobId}: ${data.data.status} (${data.data.format || "MODS_ZIP"})`;
+          if (data.data.status === "completed") {
+            downloadEl.href = `${API}/exports/${jobId}/download`;
+            downloadEl.classList.remove("hidden");
+            const fmt = data.data.format || "MODS_ZIP";
+            downloadEl.textContent = `Descargar export ${jobId} (${fmt})`;
+            return;
+          }
+          if (data.data.status === "failed") {
+            statusEl.textContent = `Export ${jobId} fallido: ${data.data.errorMessage || "sin detalle"}`;
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        statusEl.textContent = `Export ${jobId} sigue en proceso`;
+      }
+
+      async function importCurseforgeZip() {
+        if (!state.selectedModpackId) {
+          log("Primero selecciona modpack");
+          return;
+        }
+
+        const input = document.getElementById("importCurseforgeZip");
+        const file = input.files?.[0];
+        const statusEl = document.getElementById("importStatus");
+        if (!file) {
+          statusEl.textContent = "Selecciona un archivo ZIP CurseForge";
+          return;
+        }
+
+        const form = new FormData();
+        form.append("file", file);
+        form.append("profile", state.activeProfile);
+        form.append("entornoDestino", "BOTH");
+
+        statusEl.textContent = "Importando...";
+
+        try {
+          const res = await apiFetch(`${API}/modpacks/${state.selectedModpackId}/imports/curseforge`, {
+            method: "POST",
+            body: form,
+          });
+
+          const created = Array.isArray(res?.data?.created) ? res.data.created.length : 0;
+          const skipped = Array.isArray(res?.data?.skipped) ? res.data.skipped.length : 0;
+          const failed = Array.isArray(res?.data?.failed) ? res.data.failed.length : 0;
+          statusEl.textContent = `Import completado: creados=${created}, omitidos=${skipped}, fallidos=${failed}`;
+          log(`Import CurseForge ZIP: creados=${created} omitidos=${skipped} fallidos=${failed}`);
+          input.value = "";
+          await openModpackDetail(state.selectedModpackId);
+        } catch (error) {
+          statusEl.textContent = `Error importando ZIP: ${error.message}`;
+          log(`Import CurseForge fallido: ${error.message}`);
+        }
+      }
+
+      async function cloneClientToServer() {
+        if (!state.selectedModpackId) return;
+        const result = await apiFetch(
+          `${API}/modpacks/${state.selectedModpackId}/profiles/server/clone-from-client`,
+          { method: "POST" },
+        );
+        log(`Copiados a perfil servidor: ${result.data.copied}`);
+        state.activeProfile = "SERVER";
+        await openModpackDetail(state.selectedModpackId);
+      }
+
+      async function switchProfile(profile) {
+        state.activeProfile = profile;
+        await openModpackDetail(state.selectedModpackId);
+      }
+
+      document.getElementById("btnDashboard").addEventListener("click", async () => {
+        await loadDashboard();
+        showView("dashboard");
+      });
+
+      document.getElementById("btnCrear").addEventListener("click", () => {
+        showView("create");
+      });
+
+      document.getElementById("versionMinecraft").addEventListener("change", async () => {
+        await refillLoaderFamilies();
+      });
+      document.getElementById("loaderFamily").addEventListener("change", refillLoaderVersions);
+      document.getElementById("formCreate").addEventListener("submit", createModpack);
+      document.getElementById("btnSearch").addEventListener("click", async (event) => {
+        event.preventDefault();
+        await searchMods({ reset: true });
+      });
+      document.getElementById("searchText").addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        await searchMods({ reset: true });
+      });
+      document.getElementById("btnPrevPage").addEventListener("click", async (event) => {
+        event.preventDefault();
+        if (state.search.index <= 0) return;
+        state.search.index = Math.max(0, state.search.index - state.search.pageSize);
+        await searchMods({ reset: false });
+      });
+      document.getElementById("btnNextPage").addEventListener("click", async (event) => {
+        event.preventDefault();
+        state.search.index += state.search.pageSize;
+        await searchMods({ reset: false });
+      });
+      document.getElementById("btnExport").addEventListener("click", async (event) => {
+        event.preventDefault();
+        await enqueueExport();
+      });
+      document.getElementById("btnImportCurseforge").addEventListener("click", async (event) => {
+        event.preventDefault();
+        await importCurseforgeZip();
+      });
+      document.getElementById("btnCloneServer").addEventListener("click", async (event) => {
+        event.preventDefault();
+        await cloneClientToServer();
+      });
+      document.getElementById("tabClient").addEventListener("click", async (event) => {
+        event.preventDefault();
+        if (!state.selectedModpackId) return;
+        await switchProfile("CLIENT");
+      });
+      document.getElementById("tabServer").addEventListener("click", async (event) => {
+        event.preventDefault();
+        if (!state.selectedModpackId) return;
+        await switchProfile("SERVER");
+      });
+      document.getElementById("btnBackDashboard").addEventListener("click", async (event) => {
+        event.preventDefault();
+        await loadDashboard();
+        showView("dashboard");
+      });
+      document.getElementById("btnCloseModModal").addEventListener("click", (event) => {
+        event.preventDefault();
+        closeModDetails();
+      });
+      document.getElementById("modDetailsModal").addEventListener("click", (event) => {
+        if (event.target.id !== "modDetailsModal") return;
+        closeModDetails();
+      });
+
+      async function init() {
+        try {
+          await Promise.all([loadDashboard(), loadCreateCatalog()]);
+          showView("dashboard");
+          log("Aplicacion lista");
+        } catch (error) {
+          log(`Error inicializando app: ${error.message}`);
+          alert(`No se pudo iniciar la app: ${error.message}`);
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>

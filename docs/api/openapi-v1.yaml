@@ -1,0 +1,569 @@
+openapi: 3.1.0
+info:
+  title: CraftForge Web API
+  version: 1.0.0
+  description: |
+    Especificacion ejecutable del backend V1 para CraftForge Web.
+servers:
+  - url: http://localhost:3000
+    description: local
+
+tags:
+  - name: Health
+  - name: System
+  - name: Modpacks
+  - name: Mods
+  - name: Exports
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Health check de API
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                required: [status]
+
+  /api/v1/system/minecraft/versions:
+    get:
+      tags: [System]
+      summary: Lista versiones de Minecraft
+      responses:
+        "200":
+          description: Lista de versiones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MinecraftVersion"
+                required: [data]
+
+  /api/v1/system/minecraft/modloaders:
+    get:
+      tags: [System]
+      summary: Lista modloaders soportados
+      responses:
+        "200":
+          description: Lista de modloaders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ModLoader"
+                required: [data]
+
+  /api/v1/modpacks:
+    get:
+      tags: [Modpacks]
+      summary: Lista modpacks
+      responses:
+        "200":
+          description: Lista de modpacks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Modpack"
+                required: [data]
+
+    post:
+      tags: [Modpacks]
+      summary: Crea un modpack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModpackRequest"
+      responses:
+        "201":
+          description: Modpack creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Modpack"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/modpacks/{modpackId}:
+    get:
+      tags: [Modpacks]
+      summary: Detalle de modpack con mods
+      parameters:
+        - $ref: "#/components/parameters/ModpackId"
+      responses:
+        "200":
+          description: Modpack encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ModpackDetail"
+                required: [data]
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Modpacks]
+      summary: Elimina modpack
+      parameters:
+        - $ref: "#/components/parameters/ModpackId"
+      responses:
+        "204":
+          description: Eliminado
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/mods/search:
+    get:
+      tags: [Mods]
+      summary: Busca mods en CurseForge (proxy backend)
+      parameters:
+        - in: query
+          name: modpackId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: searchFilter
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: classId
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: categoryId
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: index
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Resultado de busqueda
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchModsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/modpacks/{modpackId}/mods:
+    post:
+      tags: [Mods]
+      summary: Agrega mod y resuelve dependencias requeridas
+      parameters:
+        - $ref: "#/components/parameters/ModpackId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddModRequest"
+      responses:
+        "200":
+          description: Mod agregado y dependencias aplicadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AddModResult"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/modpacks/{modpackId}/mods/{projectId}:
+    delete:
+      tags: [Mods]
+      summary: Elimina mod agregado manualmente
+      description: |
+        Si el mod tiene dependencias compartidas por otros padres, no las elimina.
+      parameters:
+        - $ref: "#/components/parameters/ModpackId"
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Mod eliminado
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/modpacks/{modpackId}/exports:
+    post:
+      tags: [Exports]
+      summary: Encola exportacion de modpack
+      parameters:
+        - $ref: "#/components/parameters/ModpackId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExportRequest"
+      responses:
+        "202":
+          description: Job encolado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ExportJob"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/exports/{jobId}:
+    get:
+      tags: [Exports]
+      summary: Consulta estado de exportacion
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Estado del job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ExportJob"
+                required: [data]
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/exports/{jobId}/download:
+    get:
+      tags: [Exports]
+      summary: Descarga ZIP cuando job este completado
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "302":
+          description: Redirige a URL de descarga local
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Job aun no completado
+
+components:
+  parameters:
+    ModpackId:
+      in: path
+      name: modpackId
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+
+  responses:
+    BadRequest:
+      description: Request invalido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
+
+    MinecraftVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+        versionString:
+          type: string
+      required: [id, versionString]
+
+    ModLoader:
+      type: object
+      properties:
+        name:
+          type: string
+          enum: [Forge, Fabric, Quilt, NeoForge]
+        curseforgeCode:
+          type: integer
+          enum: [1, 4, 5, 6]
+      required: [name, curseforgeCode]
+
+    Modpack:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        versionMinecraft:
+          type: string
+        modloaderTipo:
+          type: string
+          enum: [Forge, Fabric, Quilt, NeoForge]
+        modloaderVersion:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        [id, nombre, versionMinecraft, modloaderTipo, modloaderVersion, createdAt, updatedAt]
+
+    ModpackMod:
+      type: object
+      properties:
+        id:
+          type: integer
+        modpackId:
+          type: integer
+        curseforgeProjectId:
+          type: integer
+        curseforgeFileId:
+          type: integer
+        nombreMod:
+          type: string
+        entornoDestino:
+          type: string
+          enum: [BOTH, CLIENT_ONLY, SERVER_ONLY]
+        esDependencia:
+          type: boolean
+        padreProyectoId:
+          type: integer
+          nullable: true
+      required:
+        [id, modpackId, curseforgeProjectId, curseforgeFileId, nombreMod, entornoDestino, esDependencia]
+
+    ModpackDetail:
+      allOf:
+        - $ref: "#/components/schemas/Modpack"
+        - type: object
+          properties:
+            mods:
+              type: array
+              items:
+                $ref: "#/components/schemas/ModpackMod"
+          required: [mods]
+
+    CreateModpackRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 3
+          maxLength: 150
+        versionMinecraft:
+          type: string
+          minLength: 3
+          maxLength: 20
+        modloaderTipo:
+          type: string
+          enum: [Forge, Fabric, Quilt, NeoForge]
+        modloaderVersion:
+          type: string
+          minLength: 1
+          maxLength: 50
+      required: [nombre, versionMinecraft, modloaderTipo, modloaderVersion]
+
+    SearchModItem:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        name:
+          type: string
+        summary:
+          type: string
+        authors:
+          type: array
+          items:
+            type: string
+        logoUrl:
+          type: string
+          nullable: true
+        latestFiles:
+          type: array
+          items:
+            type: object
+            properties:
+              fileId:
+                type: integer
+              displayName:
+                type: string
+      required: [projectId, name]
+
+    SearchModsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchModItem"
+        pagination:
+          type: object
+          properties:
+            index:
+              type: integer
+            pageSize:
+              type: integer
+            totalCount:
+              type: integer
+          required: [index, pageSize, totalCount]
+      required: [data, pagination]
+
+    AddModRequest:
+      type: object
+      properties:
+        curseforgeProjectId:
+          type: integer
+          minimum: 1
+        curseforgeFileId:
+          type: integer
+          minimum: 1
+        entornoDestino:
+          type: string
+          enum: [BOTH, CLIENT_ONLY, SERVER_ONLY]
+      required: [curseforgeProjectId, curseforgeFileId, entornoDestino]
+
+    AddModResult:
+      type: object
+      properties:
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModpackMod"
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              curseforgeProjectId:
+                type: integer
+              reason:
+                type: string
+            required: [curseforgeProjectId, reason]
+      required: [created, skipped]
+
+    CreateExportRequest:
+      type: object
+      properties:
+        target:
+          type: string
+          enum: [CLIENT, SERVER, BOTH]
+      required: [target]
+
+    ExportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        modpackId:
+          type: integer
+        target:
+          type: string
+          enum: [CLIENT, SERVER, BOTH]
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        outputPath:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, modpackId, target, status, createdAt]

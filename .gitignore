@@ -1,0 +1,7 @@
+node_modules
+.env
+apps/backend/node_modules
+apps/backend/dist
+apps/backend/scratch
+*.log
+.DS_Store

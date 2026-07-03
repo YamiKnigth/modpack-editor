@@ -1,0 +1,16 @@
+{
+  "name": "modpack-editor",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/backend run dev",
+    "start": "npm --workspace apps/backend run start",
+    "worker": "npm --workspace apps/backend run worker",
+    "migrate": "npm --workspace apps/backend run migrate",
+    "bootstrap:v1": "bash scripts/bootstrap_v1.sh",
+    "smoke:v1": "bash scripts/v1_smoke_test.sh"
+  }
+}
